@@ -1,9 +1,11 @@
 [Unit]
-Description=Example systemd service.
+Description=Brightness Control
 
 [Service]
+User=oli
+Group=oli
 Type=simple
-ExecStart=/bin/bash /usr/bin/brightness-control.sh
+ExecStart=/bin/bash -c  /usr/bin/brightness-control
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

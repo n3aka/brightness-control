@@ -2,62 +2,54 @@ package main
 
 import (
 	"log"
-	"time"
 
-	"github.com/MarinX/keylogger"
+	keylogger "git.olinux.dev/go/brightness-control/lib/keylogger"
 )
 
-func keyLogger() error {
+func keyLogger() {
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	for {
-		// find keyboard device, does not require a root permission
-		keyboard := keylogger.FindKeyboardDevice()
+	k, err := keylogger.New("/dev/input/event4")
 
-		// check if we found a path to keyboard
-		if len(keyboard) <= 0 {
-			log.Println("No keyboard found...you will need to provide manual input path")
-			return nil
-		}
+	if err != nil {
+		log.Println(err)
+	}
+	defer k.Close()
 
-		log.Println("Found a keyboard at", keyboard)
-		// init keylogger with keyboard
-		k, err := keylogger.New(keyboard)
-		if err != nil {
-			log.Println(err)
-		}
-		defer k.Close()
+	events := k.Read()
 
-		events := k.Read()
-
-		// range of events
-		for e := range events {
-			switch e.Type {
-			// EvKey is used to describe state changes of keyboards, buttons, or other key-like devices.
-			// check the input_event.go for more events
-			case keylogger.EvKey:
-
-				// if the state of key is pressed
-				if e.KeyPress() {
-					if e.KeyString() == "F7" {
-						// log.Println("[event] press key ", e.KeyString())
-						if flag {
-							flag = false
-						} else {
-							flag = true
-						}
+	// range of events
+	for e := range events {
+		switch e.Type {
+		case keylogger.EvKey:
+			if e.KeyPress() {
+				if e.KeyString() == "F7" {
+					log.Println("[event] press key ", e.KeyString())
+					if !flag {
+						prepaire()
+						log.Println("running...")
+						flag = true
+					} else {
+						restore()
+						log.Println("stopped...")
+						flag = false
 					}
 				}
-
-				// // if the state of key is released
-				// if e.KeyRelease() {
-				// 	log.Println("[event] release key ", e.KeyString())
-				// }
-
-				break
+				if e.KeyString() == "F8" {
+					// log.Println("[event] press key ", e.KeyString())
+					if cor >= -5000 {
+						cor = cor - 500
+					}
+					notifier(cor)
+				}
+				if e.KeyString() == "F9" {
+					// log.Println("[event] press key ", e.KeyString())
+					if cor <= 10000 {
+						cor = cor + 500
+					}
+					notifier(cor)
+				}
 			}
+			break
 		}
 	}
-	time.Sleep(300 * time.Millisecond)
-	return nil
 }
